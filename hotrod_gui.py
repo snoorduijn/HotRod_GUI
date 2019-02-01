@@ -643,6 +643,15 @@ class Application(Tk.Frame):
         if  calType == 'TNC':                   
             self.hr.solve(self.names)
 
+        print(self.hr.calChoice) 
+        if  calType == 'DREAM':  
+            # set up markov chain; play around with burn in and chains to get better fit
+            nchains = self.DREAMprm[0]
+            nburn = self.DREAMprm[1]
+            npairs = self.DREAMprm[2]
+            npars = len(self.hr.par_names)
+            self.D = DREAM(nchains, nburn = nburn, npairs = 1)
+            self.D.sampler(self.hr) 
 #------------------------------------------------------------------------------    
             
 def main():
