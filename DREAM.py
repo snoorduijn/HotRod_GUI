@@ -122,8 +122,7 @@ class DREAM:
                 elif self.chains[i].proposal[k] > self.chains[i].pmax[k]:
                      self.chains[i].proposal[k] = self.chains[i].pmin[k] - (self.chains[i].pmax[k] - self.chains[i].proposal[k])
         self.ct+=1
-            
-    
+              
     def delm_update(self):
         for i in range(self.nc):
             for j in range(self.npars):
@@ -167,6 +166,7 @@ class DREAM:
         for i in range(self.nc):
             mean[i,:], var[i,:], n = self.chains[i].varget() 
         W = np.average(var,axis=0)
+        W[W == 0.] = np.nan
         B = np.var(mean,axis=0) * n
         self.Var = (1. -1./n) * W + 1. /n * B
         self.R = np.sqrt(self.Var/W)
