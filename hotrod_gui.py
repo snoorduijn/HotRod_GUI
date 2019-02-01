@@ -427,8 +427,8 @@ class Application(Tk.Frame):
         self.lbls1 = ['D'+u"\u2097", 'D'+u"\u209c"]
         self.lbls2 = ['k'] 
                  
-        default_vals1 = ['0.5','0.5']
-        default_width1 = ['0.5','0.5']
+        default_vals1 = ['1.0E-06','1.0E-06'']
+        default_width1 = ['1.0E-06','1.0E-06']
 
         default_vals2 = ['2.5']
         default_width2 = ['1.25']  
@@ -501,7 +501,7 @@ class Application(Tk.Frame):
         solverChoice = ["","TNC", "DREAM"]
         Tk.Label(self.lfType, text="Solver").grid(row=0, column=0)         
         self.solv = Tk.StringVar()    
-        self.solv.set(solverChoice[1])
+        self.solv.set(solverChoice[2])
         b1 = ttk.OptionMenu(self.lfType, 
                             self.solv,
                             *solverChoice
