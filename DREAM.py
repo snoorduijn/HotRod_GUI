@@ -107,7 +107,10 @@ class DREAM:
                     d += -1
                     mult[k] = 0.
             if self.genr < 4:
-                gamma = 2.38/np.sqrt(2.*self.delta*d)
+                if d == 0:
+                    gamma = 0
+                else:
+                    gamma = 2.38/np.sqrt(2.*self.delta*d)
                 if gamma > 1.0:
                     gamma = 1.0#                
                 
