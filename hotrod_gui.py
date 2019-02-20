@@ -427,7 +427,7 @@ class Application(Tk.Frame):
         self.lbls1 = ['D'+u"\u2097", 'D'+u"\u209c"]
         self.lbls2 = ['k'] 
                  
-        default_vals1 = ['1.0E-06','1.0E-06'']
+        default_vals1 = ['1.0E-06','1.0E-06']
         default_width1 = ['1.0E-06','1.0E-06']
 
         default_vals2 = ['2.5']
