@@ -7,7 +7,7 @@ Created on Tue May  9 20:32:52 2017
 
 import numpy as np
 import scipy as sp
-from HotRod_class_v10 import *
+from HotRod_class_gui import *
 import copy
 
 def likelihood(model,chain):
@@ -108,11 +108,12 @@ class DREAM:
                     mult[k] = 0.
             if self.genr < 4:
                 if d == 0:
-                    gamma = 0
+                    gamma = 1.0
                 else:
                     gamma = 2.38/np.sqrt(2.*self.delta*d)
+#                print(self.delta, d, gamma)
                 if gamma > 1.0:
-                    gamma = 1.0#                
+                    gamma = 1.0               
                 
             else:
                 gamma = 1.0
@@ -125,7 +126,8 @@ class DREAM:
                 elif self.chains[i].proposal[k] > self.chains[i].pmax[k]:
                      self.chains[i].proposal[k] = self.chains[i].pmin[k] - (self.chains[i].pmax[k] - self.chains[i].proposal[k])
         self.ct+=1
-              
+            
+    
     def delm_update(self):
         for i in range(self.nc):
             for j in range(self.npars):
@@ -170,9 +172,12 @@ class DREAM:
             mean[i,:], var[i,:], n = self.chains[i].varget() 
         W = np.average(var,axis=0)
         W[W == 0.] = np.nan
+#        print(W)
         B = np.var(mean,axis=0) * n
         self.Var = (1. -1./n) * W + 1. /n * B
+#        print(self.Var,W)
         self.R = np.sqrt(self.Var/W)
+#        print(self.R)
         
     def sampler(self, parent, convergence_criteria = 1.2):
         print(parent.paramChoice)
@@ -226,7 +231,7 @@ class DREAM:
         self.ct = 0
         self.genr = 0
         self.R[:] = 10      
-
+        
         f = open('%s_param_data.dat'%(fn_name[:-4]), 'w') 
         g = open('%s_sim_data.dat'%(fn_name[:-4]), 'w') 
         for i in range(self.nc):
@@ -246,7 +251,7 @@ class DREAM:
             if self.ct > 10:
                 self.Rget()
             if self.ct%5 == 0:
-                print("Sample %i, Max R stat: %.4f"%(self.ct, max(self.R)))
+                print("Sample %i, Max R stat: %.3f"%(self.ct, max(self.R)))
             self.gen_mod() 
         
         

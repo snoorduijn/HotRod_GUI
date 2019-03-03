@@ -233,6 +233,7 @@ class HotRod:
 
         
         self.Unif = np.asarray(boolean_unif)
+        self.Log =  list(~np.array(self.Unif))
 
         self.pmin = []
         self.pmax = []        
@@ -252,7 +253,7 @@ class HotRod:
         self.pmax[2:4] = [np.pi] * 2 
            
         mn_diff =  2*np.pi / 2
-        print(self.Mean)
+        #print(self.Mean)
         self.Mean[2:4] = [0.0, 0.0] 
         self.width[2:4] = 2*[np.pi]                 
 
@@ -326,7 +327,7 @@ class HotRod:
             ''' 
             DispL = self.dispL
             DispT = self.dispT # Dz == Dy
-            print(k2, DispL, DispT, self.pc)
+            #print(k2, DispL, DispT, self.pc)
             ns = np.shape(U)[1]
             nt = np.size(self.t)
             T = np.zeros((nt,ns))
@@ -455,8 +456,8 @@ class HotRod:
                             self.theta, 
                             self.phi,
                             self.Mean[4]] 
-        print(names)
-        print(cal_variables)
+#        print(names)
+#        print(cal_variables)
 #        print(self.Mean)
         self.bounds = tuple(zip(self.pmin, self.pmax))
         print(self.bounds)
