@@ -146,7 +146,7 @@ class DREAM:
         IQRmin = np.percentile(Omega,25) - 2 * (np.percentile(Omega,75) - np.percentile(Omega,25))        
         for i in range(self.nc):      
             if Omega[i] < IQRmin:
-                print("Chain %i replaced (%.2f => %.2f)"%(i, Omega[i],IQRmin))
+                print("Chain %i replaced (%.2f => %.2f)"%(i, Omega[i],self.chains[best].Lold))
                 self.chains[i].current = np.copy(self.chains[best].current)
                 self.chains[i].Lold = np.copy(self.chains[best].Lold)
                 self.reset = True
