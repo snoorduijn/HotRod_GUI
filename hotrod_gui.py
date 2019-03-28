@@ -5,6 +5,7 @@ Created on Tue Mar 28 14:47:20 2017
 @author: Saskia
 """
 
+import multiprocessing as mp
 import matplotlib
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -200,6 +201,8 @@ class Application(Tk.Frame):
         self.master = master
         self.master.title(u"HotRod")
 
+        self.dream_proc = None
+
         for row_index in range(10):
             self.master.rowconfigure(row_index, weight=1)
             for col_index in range(10):
@@ -212,6 +215,15 @@ class Application(Tk.Frame):
         self.nb.add(self.tab1, text = "Console")       
          
         self._create_input_panels()
+
+        # catch user exit request
+        self.bind("<Destroy>", self.quit_gui)
+
+    def quit_gui(self, e):
+        # Kill the dream process if necessary
+        if self.dream_proc is not None:
+            self.dream_proc.terminate()
+        self.destroy()
         
     def _create_input_panels(self):
         self.frame1 = Tk.Frame(self.tab1, background='green')
@@ -642,17 +654,34 @@ class Application(Tk.Frame):
         self.hr.calChoice = calType    
         print(self.hr.calChoice) 
         if  calType == 'TNC':                   
-            self.hr.solve(self.names)
+            #self.hr.solve(self.names)
+            print("TNC is disabled, use DREAM instead")
 
-        print(self.hr.calChoice) 
-        if  calType == 'DREAM':  
+        def dream_worker():
             # set up markov chain; play around with burn in and chains to get better fit
             nchains = self.DREAMprm[0]
             nburn = self.DREAMprm[1]
             npairs = self.DREAMprm[2]
             npars = len(self.hr.par_names)
             self.D = DREAM(nchains, nburn = nburn, npairs = 1)
-            self.D.sampler(self.hr) 
+            self.D.sampler(self.hr)
+
+        TICK_INTERVAL = 100 # ms
+
+        def wait_for_dream():
+            if self.dream_proc is not None and self.dream_proc.is_alive():
+                self.master.after(TICK_INTERVAL, wait_for_dream)
+            else:
+                self.dream_proc.join()
+                self.dream_proc = None
+
+        if  calType == 'DREAM':
+            if self.dream_proc is not None:
+                print("DREAM already running")
+            else:
+                self.dream_proc = mp.Process(target=dream_worker)
+                self.dream_proc.start()
+                self.master.after(TICK_INTERVAL, wait_for_dream)
 #------------------------------------------------------------------------------    
             
 def main():
