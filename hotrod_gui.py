@@ -202,6 +202,7 @@ class Application(Tk.Frame):
         self.master.title(u"HotRod")
 
         self.dream_proc = None
+        self.tab2 = None
 
         for row_index in range(10):
             self.master.rowconfigure(row_index, weight=1)
@@ -580,8 +581,9 @@ class Application(Tk.Frame):
         
     def _solve_frame(self):
         # add tab for solver output
-        self.tab2 = ttk.Frame(self.nb)
-        self.nb.add(self.tab2, text = "Ouput")   
+        if self.tab2 is None:
+            self.tab2 = ttk.Frame(self.nb)
+            self.nb.add(self.tab2, text = "Ouput")
         # run the calibration code
         self._solve()
         
