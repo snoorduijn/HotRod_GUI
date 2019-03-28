@@ -5,6 +5,7 @@ Created on Tue Mar 28 14:47:20 2017
 @author: Saskia
 """
 
+import time
 import multiprocessing as mp
 import matplotlib
 from matplotlib.backend_bases import key_press_handler
@@ -193,7 +194,82 @@ class hotrod3Dfigure(Tk.Frame):
 
 #        if self.hr
 #            self.hr.angle2flux()
-    
+
+class DreamOutput(ttk.Frame):
+    def __init__(self, parent, convergence_criteria=1.2, **args):
+        super(DreamOutput, self).__init__(parent, **args)
+        self.convergence_criteria = convergence_criteria
+
+        self.f = Figure(dpi=100)
+        self.canvas = FigureCanvasTkAgg(self.f, master=self)
+        self.canvas.get_tk_widget().configure(background='white')
+        self.canvas.get_tk_widget().pack(side=Tk.TOP, fill=Tk.BOTH, expand=1)
+
+        gs1 = matplotlib.gridspec.GridSpec(2, 1)
+        self.ax1, self.ax2 = [self.f.add_subplot(ss) for ss in gs1]
+        #self.ax1.set_ylim([0.7, 2])
+
+        self.t0 = time.time()
+
+        ps1 = {"linestyle": "-", "lw": 0.7 , "color": "gray"}
+        ps2 = {"linestyle": "-", "lw": 0.7 , "color": "red"}
+        self.plotstyle = {True:ps1, False:ps2}
+
+        self.WIN_SZ = 300
+        self.CACHE_SZ = self.WIN_SZ*1.1
+        self.i = []
+        self.R = []
+        self.L = []
+
+        self.clear_axes()
+
+    def clear_axes(self):
+        self.ax1.clear()
+        self.ax2.clear()
+        self.ax1.set_ylabel("R", rotation=0, fontsize=20, labelpad=20)
+        self.ax2.set_ylabel("$\mathcal{L}$", rotation=0, fontsize=20, labelpad=20)
+        i = self.i[-1] if len(self.i) > 0 else self.CACHE_SZ
+        self.ax1.hlines([self.convergence_criteria], 0, i+self.CACHE_SZ, color="gray", linestyle=":")
+
+    def plot_data(self, burn, i, R, L):
+
+        if len(self.i) > 0 and i < self.i[-1]:
+            # burn in restarted, or complete
+            self.i = []
+            self.R = []
+            self.L = []
+            self.clear_axes()
+            self.ax1.plot(self.i, self.R, **self.plotstyle[burn])
+            self.ax2.plot(self.i, self.L, **self.plotstyle[burn])
+
+        if len(self.i) == self.CACHE_SZ:
+            # update the cache and replot
+            self.i = self.i[-self.WIN_SZ:]
+            self.R = self.R[-self.WIN_SZ:]
+            self.L = self.L[-self.WIN_SZ:]
+            self.clear_axes()
+            self.ax1.plot(self.i, self.R, **self.plotstyle[burn])
+            self.ax2.plot(self.i, self.L, **self.plotstyle[burn])
+
+        if i >= 2:
+            self.ax1.plot([i-1, i], [self.R[-1][:len(R)], R], **self.plotstyle[burn])
+            self.ax2.plot([i-1, i], [self.L[-1], L], **self.plotstyle[burn])
+
+            # show sliding window
+            self.ax1.set_xlim([max(1, i-self.WIN_SZ), i])
+            self.ax2.set_xlim([max(1, i-self.WIN_SZ), i])
+
+        self.i.append(i)
+        self.R.append(R)
+        self.L.append(L)
+
+        # update canvas at most once every 3 seconds
+        t1 = time.time()
+        if i >= 2 and t1 - self.t0 > 3:
+            self.f.tight_layout()
+            self.f.canvas.draw()
+            self.t0 = t1
+
 class Application(Tk.Frame):
     
     def __init__(self, master):
@@ -582,11 +658,12 @@ class Application(Tk.Frame):
     def _solve_frame(self):
         # add tab for solver output
         if self.tab2 is None:
-            self.tab2 = ttk.Frame(self.nb)
+            self.tab2 = DreamOutput(self.nb)
             self.nb.add(self.tab2, text = "Ouput")
+            self.nb.select(self.tab2)
         # run the calibration code
         self._solve()
-        
+
     def _solve(self):
         
         choice = self.Checkb1.get()
@@ -658,32 +735,42 @@ class Application(Tk.Frame):
         if  calType == 'TNC':                   
             #self.hr.solve(self.names)
             print("TNC is disabled, use DREAM instead")
+            return
 
-        def dream_worker():
+        if self.dream_proc is not None:
+            print("DREAM already running")
+            return
+
+        def dream_worker(q):
             # set up markov chain; play around with burn in and chains to get better fit
             nchains = self.DREAMprm[0]
             nburn = self.DREAMprm[1]
             npairs = self.DREAMprm[2]
             npars = len(self.hr.par_names)
             self.D = DREAM(nchains, nburn = nburn, npairs = 1)
-            self.D.sampler(self.hr)
+            for data in self.D.sampler(self.hr):
+                q.put(data)
+            q.close()
 
-        TICK_INTERVAL = 100 # ms
+        TICK_INTERVAL = 500 # ms
+        q = mp.Queue()
+        self.dream_proc = mp.Process(target=dream_worker, args=(q,))
+        self.dream_proc.start()
 
         def wait_for_dream():
+
+            while not q.empty():
+                burn, i, R, L = q.get()
+                self.tab2.plot_data(burn, i, R, L)
+
             if self.dream_proc is not None and self.dream_proc.is_alive():
                 self.master.after(TICK_INTERVAL, wait_for_dream)
             else:
                 self.dream_proc.join()
                 self.dream_proc = None
+                q.close()
 
-        if  calType == 'DREAM':
-            if self.dream_proc is not None:
-                print("DREAM already running")
-            else:
-                self.dream_proc = mp.Process(target=dream_worker)
-                self.dream_proc.start()
-                self.master.after(TICK_INTERVAL, wait_for_dream)
+        self.master.after(TICK_INTERVAL, wait_for_dream)
 #------------------------------------------------------------------------------    
             
 def main():

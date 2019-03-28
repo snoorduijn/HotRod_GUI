@@ -205,6 +205,7 @@ class DREAM:
 #            print(self.chains[i].Lold)    
         
         self.set_CR()
+        self.R = np.array(self.nc*[10])
         
         while self.burn == True:
             self.propgen()
@@ -225,6 +226,8 @@ class DREAM:
             if self.ct >= 5:
                 self.Chain_removal()
             self.gen_mod()
+
+            yield self.burn, self.ct, self.R, [ch.likelihood[-1] for ch in self.chains]
                      
         self.delm = self.delm/self.crct
         self.CR = (np.argmax(self.delm)+1)/self.ncr
@@ -258,6 +261,7 @@ class DREAM:
                 print("Sample %i, Max R stat: %.3f"%(self.ct, max(self.R)))
             self.gen_mod() 
         
+            yield self.burn, self.ct, self.R, [ch.likelihood[-1] for ch in self.chains]
         
             for i in range(self.nc):
                 dim = np.shape(self.chains[i].pars)   
