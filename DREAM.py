@@ -179,7 +179,7 @@ class DREAM:
         self.R = np.sqrt(self.Var/W)
 #        print(self.R)
         
-    def sampler(self, parent, convergence_criteria = 1.2):
+    def sampler(self, parent, convergence_criteria = 1.2, max_samples=None):
         print(parent.paramChoice)
         self.npars = len(parent.Log)
         print(self.npars)
@@ -239,6 +239,10 @@ class DREAM:
             self.chains[i].likelihood = [self.chains[i].Lold]
         
         while max(self.R) > convergence_criteria:
+
+            if max_samples is not None and self.ct > max_samples:
+                break
+
             self.propgen()
         
             for i in range(self.nc):
