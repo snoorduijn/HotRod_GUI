@@ -697,64 +697,33 @@ class Application(Tk.Frame):
         self.avg = self.avg[:2] +[0,0] +self.avg[2:]
         self.width = self.width[:2] +[0,0]+self.width[2:]
         self.distr = self.distr[:2] + ["Uniform", "Uniform"] + self.distr[2:]
-        
-
 
         calType = self.solv.get()
+        if  calType == 'TNC':
+            print("TNC is disabled, use DREAM instead")
+            return
         if calType == "DREAM":
             self.DREAMprm = []
             for dm in self.DREAMparam:
                 self.DREAMprm.append(int(dm.get()))
 
-        
         sinfo_file = self.flds[0].get()
         tdata_file = self.flds[1].get()
         radius_i = self.setup[0].get()
         radius_o = self.setup[1].get() 
         acuracy = self.setup[2].get() 
         margin = self.setup[3].get()
-        
-        self.hr = HotRod(tdata_file, 
-                         sinfo_file,
-                         self.names,
-                         self.avg,
-                         self.width,
-                         self.distr,
-                         paramChoice = choice,
-                         calChoice = calType,
-                         radius_inner=radius_i, 
-                         radius_outer=radius_o, 
-                         acuracy=acuracy, 
-                         margin=margin)
-
-        
-        self.hr.get_param_stats()
-        self.hr.paramChoice = choice
-        self.hr.calChoice = calType    
-        print(self.hr.calChoice) 
-        if  calType == 'TNC':                   
-            #self.hr.solve(self.names)
-            print("TNC is disabled, use DREAM instead")
-            return
 
         if self.dream_proc is not None:
             print("DREAM already running")
             return
 
-        def dream_worker(q):
-            # set up markov chain; play around with burn in and chains to get better fit
-            nchains = self.DREAMprm[0]
-            nburn = self.DREAMprm[1]
-            npairs = self.DREAMprm[2]
-            npars = len(self.hr.par_names)
-            self.D = DREAM(nchains, nburn = nburn, npairs = 1)
-            for data in self.D.sampler(self.hr):
-                q.put(data)
-            q.close()
+        hrprm = (tdata_file, sinfo_file, self.names, self.avg, self.width, self.distr,
+                     choice, calType, radius_i, radius_o, acuracy, margin)
 
         TICK_INTERVAL = 500 # ms
         q = mp.Queue()
-        self.dream_proc = mp.Process(target=dream_worker, args=(q,))
+        self.dream_proc = mp.Process(target=dream_worker, args=(hrprm, self.DREAMprm, q))
         self.dream_proc.start()
 
         def wait_for_dream():
@@ -772,7 +741,38 @@ class Application(Tk.Frame):
 
         self.master.after(TICK_INTERVAL, wait_for_dream)
 #------------------------------------------------------------------------------    
-            
+
+def dream_worker(hrprm, DREAMprm, q):
+
+    (tdata_file, sinfo_file, names, avg, width, distr,
+             choice, calType, radius_i, radius_o, acuracy, margin) = hrprm
+
+    hr = HotRod(tdata_file, 
+                 sinfo_file,
+                 names,
+                 avg,
+                 width,
+                 distr,
+                 paramChoice = choice,
+                 calChoice = calType,
+                 radius_inner=radius_i, 
+                 radius_outer=radius_o, 
+                 acuracy=acuracy, 
+                 margin=margin)
+    hr.get_param_stats()
+    hr.paramChoice = choice
+    hr.calChoice = calType    
+    print(hr.calChoice)
+
+    # set up markov chain; play around with burn in and chains to get better fit
+    nchains = DREAMprm[0]
+    nburn = DREAMprm[1]
+    npairs = DREAMprm[2]
+    D = DREAM(nchains, nburn = nburn, npairs = 1)
+    for data in D.sampler(hr):
+        q.put(data)
+    q.close()
+
 def main():
     
     root = Tk.Tk()    
@@ -787,6 +787,9 @@ def main():
 #------------------------------------------------------------------------------ 
 
 if __name__ == '__main__':
+    # make process creation behaviour on linux match that of windows
+    mp.set_start_method('spawn')
+
     main()
 
     
