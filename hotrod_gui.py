@@ -573,10 +573,10 @@ class Application(Tk.Frame):
         eWidth = Tk.Entry(self.opt2, width=10, text = self.width2).grid(row=i+2, column=3)
         self.width2.set(default_width2[0])
 
-        self.distr = Tk.StringVar()    
-        self.distr.set(distrChoice[1])
+        self.distr2 = Tk.StringVar()    
+        self.distr2.set(distrChoice[1])
         bU1 = ttk.OptionMenu(self.opt2, 
-                            self.distr,
+                            self.distr2,
                             *distrChoice
                             )
         bU1.grid(row = i+2, column = 4)
@@ -641,15 +641,29 @@ class Application(Tk.Frame):
             allInputs = [self.ini2, self.width2]
             labels=self.lbls2
             
-#        print(labels)
-        for sets in allInputs:
-            if sets == 0:
-                text = "initial"
+        print(labels)
+        print(len(allInputs))
+        for ii, sets in enumerate(allInputs):
+            text = plusMinus + r" or " + sigma
+            if ii == 0:
+                text = "initial"  
+            print(sets)
+            print(text)
+            # sets for Option 1 is a list of 2 entry boxes
+            # check if sets is a list
+            if isinstance(sets, list): 
+                # check entry boxes are populated
+                for var in sets:
+                    try:
+                        var.get()
+                    except:
+                         messagebox.showerror("Missing Value", "Please enter %s value for %s"%(text, self.lbls[i][:-1]))
+                    if var.get() is "":
+                        messagebox.showerror("Missing value", "Please enter value for %s"%(self.lbls[i][:-1]))
             else:
-                text = plusMinus + r" or " + sigma
-            for var in sets:
+                # sets for Option 2 is not a list
                 try:
-                    var.get()
+                    sets.get()
                 except:
                      messagebox.showerror("Missing Value", "Please enter %s value for %s"%(text, self.lbls[i][:-1]))
                 if var.get() is "":
@@ -688,10 +702,10 @@ class Application(Tk.Frame):
         else:
             print("Option 2")
             self.names = self.lbls + angles + self.lbls2
-            for i, ii in enumerate(self.ini2):
-                self.avg.append(float(ii.get()))
-                self.distr.append(self.opt2Distr[i].get())
-                self.width.append(float(self.width2[i].get()))
+            self.avg.append(float(self.ini2.get()))
+            self.distr.append(self.distr2.get())
+            self.width.append(float(self.width2.get()))
+            print(self.avg, self.distr, self.width)
 
 
         self.avg = self.avg[:2] +[0,0] +self.avg[2:]
