@@ -788,7 +788,7 @@ def main():
 
 if __name__ == '__main__':
     # make process creation behaviour on linux match that of windows
-    mp.set_start_method('spawn')
+    mp.set_start_method('spawn', force=True)
 
     main()
 
